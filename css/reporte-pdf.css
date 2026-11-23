@@ -1,0 +1,242 @@
+/**
+ * reporte-pdf.css
+ * ----------------------------------------------------------------------------
+ * Diseño del reporte en hoja membretada (reporte-pdf.html).
+ * Hoja tamaño carta: 8.5 x 11 pulgadas. Márgenes según el membrete:
+ *   - arriba 1.55 in  (espacio del logo)
+ *   - abajo  1.10 in  (espacio de la franja azul)
+ *   - lados  0.85 in
+ */
+
+@page {
+  size: letter;
+  margin: 0;               /* los márgenes los da la tabla "marco" */
+}
+
+.pagina-reporte {
+  background-color: #6b7280;  /* gris alrededor de la hoja en pantalla */
+  color: #1f2937;
+  font-size: 10pt;
+}
+
+/* ---------------------- Barra de acciones (solo pantalla) ---------------------- */
+.barra-reporte {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background-color: var(--color-marca-oscuro);
+  color: #fff;
+}
+
+/* ---------------------- Hoja y membrete ---------------------- */
+
+/* En pantalla se ve el membrete solo arriba (vista previa); al imprimir se repite en cada hoja */
+.membrete {
+  display: none;
+}
+
+.marco {
+  width: 8.5in;
+  margin: 1rem auto;
+  background: #fff url('../img/membrete.png') top center / 8.5in 11in no-repeat;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35);
+  border-collapse: collapse;
+}
+
+.marco > tbody > tr > td,
+.marco > thead > tr > td,
+.marco > tfoot > tr > td {
+  padding: 0 0.85in;
+}
+
+.espacio-superior { height: 1.55in; }
+.espacio-inferior { height: 1.1in; }
+
+/* ---------------------- Contenido ---------------------- */
+.titulo-reporte {
+  font-size: 18pt;
+  font-weight: 700;
+  color: var(--color-marca-oscuro);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.subtitulo-reporte {
+  color: #4b5563;
+  margin: 0.15rem 0 0.6rem;
+}
+
+.datos-reporte {
+  font-size: 8.5pt;
+  color: #4b5563;
+  border-left: 3px solid var(--color-marca);
+  padding-left: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.seccion-reporte {
+  font-size: 11.5pt;
+  font-weight: 700;
+  color: var(--color-marca-oscuro);
+  margin: 1rem 0 0.4rem;
+  break-after: avoid;          /* el título no queda solo al final de una hoja */
+}
+
+/* Resumen en 4 cuadros */
+.resumen-reporte {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+
+.resumen-reporte div {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+}
+
+.resumen-reporte span {
+  display: block;
+  font-size: 7.5pt;
+  color: #6b7280;
+}
+
+.resumen-reporte strong {
+  font-size: 12pt;
+}
+
+/* Tablas */
+.tabla-reporte {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8.5pt;
+}
+
+.tabla-reporte th {
+  background-color: var(--color-marca-oscuro);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.3rem 0.4rem;
+  text-align: left;
+}
+
+.tabla-reporte td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.tabla-reporte tr {
+  break-inside: avoid;         /* una fila no se parte entre dos hojas */
+}
+
+/* Detalle: anchos fijos (colgroup) para que la columna Actividad use el espacio libre */
+.tabla-detalle {
+  table-layout: fixed;
+  font-size: 8pt;
+}
+
+.tabla-detalle td {
+  overflow-wrap: anywhere;
+}
+
+/* Último renglón del detalle: total y firma juntos */
+.tabla-detalle .fila-cierre td {
+  border-bottom: none;
+  padding: 0;
+}
+
+.total-cierre {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.5rem;
+  padding: 0.3rem 0.4rem;
+  background-color: #eef0fb;
+  font-weight: 700;
+}
+
+.total-cierre span:first-child {
+  margin-right: auto;
+}
+
+.tabla-reporte .fila-total td {
+  background-color: #eef0fb;
+  font-weight: 700;
+}
+
+.tabla-reporte .num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla-reporte .detalle-proyecto {
+  color: #6b7280;
+  font-size: 7.5pt;
+}
+
+/* ---------------------- Firma (siempre al final) ---------------------- */
+.bloque-firma {
+  break-inside: avoid;         /* la firma nunca se separa de su nombre */
+  width: 2.8in;
+  margin: 1.6rem auto 0.5rem;
+  text-align: center;
+}
+
+.firma {
+  display: block;
+  width: 2.2in;
+  height: auto;
+  margin: 0 auto -0.04in;      /* se apoya apenas sobre la línea, como al firmar */
+}
+
+.linea-firma {
+  border-top: 1px solid #1f2937;
+}
+
+.nombre-firma {
+  font-weight: 700;
+  margin: 0.25rem 0 0;
+  font-size: 10pt;
+}
+
+.fecha-firma {
+  font-size: 8pt;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ---------------------- Impresión / PDF ---------------------- */
+@media print {
+  .no-imprimir { display: none !important; }
+
+  .pagina-reporte { background: #fff; }
+
+  /* Los colores de fondo (encabezados de tabla) también se imprimen */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* El membrete va fijo: el navegador lo repite en cada hoja impresa */
+  .membrete {
+    display: block;
+    position: fixed;
+    inset: 0;
+    width: 8.5in;
+    height: 11in;
+    background: url('../img/membrete.png') center / 100% 100% no-repeat;
+    z-index: -1;
+  }
+
+  .marco {
+    margin: 0;
+    background: none;
+    box-shadow: none;
+  }
+}

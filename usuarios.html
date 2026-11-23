@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<!--
+  usuarios.html - EQUIPO Y AJUSTES (solo rol Administrador; como "Team" y "Settings" de Clockify)
+  - CRUD de la tabla "usuarios": crear, listar, editar (rol, TARIFA POR HORA y contraseña),
+    activar/desactivar y eliminar. Muestra las horas del mes y quién tiene el cronómetro corriendo.
+  - Ajustes del espacio de trabajo: empresa, moneda y tarifa general.
+  - Respaldo de la base de datos (.db) y matriz de permisos por rol.
+  Lógica en: js/usuarios.js
+-->
+<html lang="es">
+<head>
+  <!-- Codificación UTF-8: permite mostrar acentos y la letra ñ -->
+  <meta charset="UTF-8">
+  <!-- Viewport: indispensable para el diseño responsivo -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Equipo de trabajo: usuarios, roles, tarifas por hora y ajustes.">
+  <title>Equipo | Control de Tiempo</title>
+
+  <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Tipografía Montserrat (manual de identidad), copia local -->
+  <link href="vendor/montserrat/montserrat.css" rel="stylesheet">
+  <link href="css/estilos.css" rel="stylesheet">
+  <!-- Ícono de la pestaña: logotipo -->
+  <link rel="icon" type="image/png" href="img/logo.png">
+</head>
+
+<!-- data-permiso en <body>: solo el administrador puede entrar (lo revisa js/sesion.js) -->
+<body data-permiso="usuarios.gestionar">
+
+  <!-- ======================= Encabezado y menú ======================= -->
+  <header>
+    <!-- Barra de navegación de Bootstrap (misma que en las demás páginas) -->
+    <nav class="navbar navbar-expand-lg bg-marca shadow-sm" data-bs-theme="dark">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="index.html">
+          <img src="img/logo-blanco.png" alt="" class="logo-marca"> Control de Tiempo
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
+                aria-controls="menu-principal" aria-expanded="false" aria-label="Mostrar menú">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="menu-principal">
+          <!-- El menú del usuario (nombre, rol, Cerrar sesión) lo agrega js/sesion.js al final de esta lista -->
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-clock-history"></i> Rastreador</a></li>
+            <li class="nav-item"><a class="nav-link" href="reportes.html"><i class="bi bi-bar-chart"></i> Reportes</a></li>
+            <li class="nav-item"><a class="nav-link" href="proyectos.html"><i class="bi bi-folder2-open"></i> Proyectos</a></li>
+            <li class="nav-item" data-permiso="usuarios.gestionar"><a class="nav-link" href="usuarios.html"><i class="bi bi-people"></i> Equipo</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ========================= Contenido ========================= -->
+  <main class="container py-4">
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+      <div>
+        <h1 class="h2 fw-bold mb-1">Equipo</h1>
+        <p class="text-body-secondary mb-0" id="contador-usuarios">Cargando usuarios...</p>
+      </div>
+      <button type="button" class="btn btn-primary" id="btn-nuevo-usuario">
+        <i class="bi bi-person-plus"></i> Nuevo usuario
+      </button>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <section class="card shadow-sm mb-4" aria-label="Tabla de usuarios">
+      <!-- table-responsive: en pantallas pequeñas la tabla se desplaza a los lados -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 tabla-datos">
+          <thead>
+            <tr>
+              <th scope="col">Nombre</th>
+              <th scope="col">Rol</th>
+              <th scope="col" class="d-none d-md-table-cell">Estado</th>
+              <th scope="col" class="text-end">Tarifa/h</th>
+              <th scope="col" class="d-none d-md-table-cell text-end">Horas del mes</th>
+              <th scope="col" class="d-none d-lg-table-cell">Último acceso</th>
+              <th scope="col" class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <!-- Las filas las genera usuarios.js (dibujarTabla) con los datos de SQLite -->
+          <tbody id="tabla-usuarios">
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="row g-4 mb-4">
+      <!-- Ajustes del espacio de trabajo (tabla "configuracion") -->
+      <section class="col-lg-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white py-3">
+            <h2 class="h5 mb-0"><i class="bi bi-gear text-primary"></i> Ajustes</h2>
+          </div>
+          <form class="card-body" id="form-ajustes" novalidate>
+            <div class="mb-3">
+              <label for="a-empresa" class="form-label">Empresa <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="a-empresa" maxlength="80" required>
+              <div class="invalid-feedback" id="error-a-empresa"></div>
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-5">
+                <label for="a-moneda" class="form-label">Moneda</label>
+                <select class="form-select" id="a-moneda">
+                  <option value="MXN">MXN – Peso mexicano</option>
+                  <option value="USD">USD – Dólar</option>
+                  <option value="EUR">EUR – Euro</option>
+                </select>
+                <div class="invalid-feedback" id="error-a-moneda"></div>
+              </div>
+              <div class="col-sm-7">
+                <label for="a-tarifa" class="form-label">Tarifa general por hora</label>
+                <div class="input-group has-validation">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="a-tarifa" min="0" step="0.01" required>
+                  <div class="invalid-feedback" id="error-a-tarifa"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Explicación de cómo se elige la tarifa de cada entrada -->
+            <p class="small text-body-secondary">
+              <i class="bi bi-info-circle"></i> Tarifa que se aplica a cada entrada:
+              <strong>1)</strong> la del proyecto, si tiene;
+              <strong>2)</strong> la del miembro, si es mayor que 0;
+              <strong>3)</strong> esta tarifa general.
+            </p>
+            <button type="submit" class="btn btn-primary" id="btn-guardar-ajustes"><i class="bi bi-floppy"></i> Guardar ajustes</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Respaldo de la base de datos SQLite -->
+      <section class="col-lg-6" data-permiso="bd.respaldo">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white py-3">
+            <h2 class="h5 mb-0"><i class="bi bi-database text-primary"></i> Base de datos</h2>
+          </div>
+          <div class="card-body">
+            <p class="text-body-secondary small">
+              Los datos se guardan automáticamente en este navegador. Descarga el archivo
+              <code>tiempos.db</code> como respaldo o para abrirlo en otra computadora.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-outline-primary" id="btn-exportar"><i class="bi bi-download"></i> Descargar .db</button>
+              <button type="button" class="btn btn-outline-primary" id="btn-importar"><i class="bi bi-upload"></i> Importar .db</button>
+              <button type="button" class="btn btn-outline-danger" id="btn-restablecer"><i class="bi bi-arrow-counterclockwise"></i> Restablecer</button>
+              <!-- Selector de archivo oculto: se abre al presionar "Importar .db" -->
+              <input type="file" id="archivo-importar" accept=".db,.sqlite,.sqlite3" class="d-none">
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Matriz de permisos: qué puede hacer cada rol (la genera usuarios.js desde Sesion.PERMISOS) -->
+    <section class="card shadow-sm" aria-labelledby="titulo-permisos">
+      <div class="card-header bg-white py-3">
+        <h2 class="h5 mb-0" id="titulo-permisos"><i class="bi bi-shield-check text-primary"></i> Permisos por rol</h2>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle text-center mb-0" id="tabla-permisos"></table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ Modal: formulario para crear / editar usuario ============ -->
+  <div class="modal fade" id="modal-usuario" tabindex="-1" aria-labelledby="titulo-modal-usuario" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <!-- El formulario envuelve todo el contenido del modal para que Enter lo envíe -->
+      <form class="modal-content" id="form-usuario" novalidate>
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-modal-usuario">Nuevo usuario</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="u-nombre" class="form-label">Nombre completo <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="u-nombre" name="nombre" maxlength="80" placeholder="Ej. Ana López" required>
+            <div class="invalid-feedback" id="error-u-nombre"></div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label for="u-usuario" class="form-label">Usuario <span class="text-danger">*</span></label>
+              <input type="text" class="form-control text-lowercase" id="u-usuario" name="usuario" maxlength="20"
+                     placeholder="Ej. ana.lopez" autocomplete="off" required>
+              <div class="invalid-feedback" id="error-u-usuario"></div>
+            </div>
+            <div class="col-sm-6">
+              <label for="u-rol" class="form-label">Rol <span class="text-danger">*</span></label>
+              <select class="form-select" id="u-rol" name="rol" required>
+                <option value="">Selecciona...</option>
+                <option value="administrador">Administrador</option>
+                <option value="colaborador">Colaborador</option>
+                <option value="consulta">Consulta</option>
+              </select>
+              <div class="invalid-feedback" id="error-u-rol"></div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="u-tarifa" class="form-label">Tarifa por hora</label>
+            <div class="input-group has-validation">
+              <span class="input-group-text">$</span>
+              <input type="number" class="form-control" id="u-tarifa" name="tarifa_hora" min="0" step="0.01" placeholder="0 = usar la tarifa general">
+              <div class="invalid-feedback" id="error-u-tarifa"></div>
+            </div>
+            <div class="form-text">Se aplica en los proyectos que no tienen tarifa propia.</div>
+          </div>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label for="u-password" class="form-label">Contraseña <span class="text-danger" id="marca-password">*</span></label>
+              <input type="password" class="form-control" id="u-password" name="password" autocomplete="new-password">
+              <div class="invalid-feedback" id="error-u-password"></div>
+            </div>
+            <div class="col-sm-6">
+              <label for="u-confirmar" class="form-label">Confirmar contraseña</label>
+              <input type="password" class="form-control" id="u-confirmar" name="confirmar" autocomplete="new-password">
+              <div class="invalid-feedback" id="error-u-confirmar"></div>
+            </div>
+          </div>
+          <!-- Texto de ayuda que cambia según se cree o edite (usuarios.js) -->
+          <div class="form-text" id="ayuda-password">Mínimo 6 caracteres.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-guardar-usuario">
+            <i class="bi bi-floppy"></i> Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ Modal: confirmar eliminación de usuario ============ -->
+  <div class="modal fade" id="modal-eliminar-usuario" tabindex="-1" aria-labelledby="titulo-eliminar-usuario" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-eliminar-usuario"><i class="bi bi-trash text-danger"></i> Eliminar usuario</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          ¿Seguro que deseas eliminar a <strong id="nombre-eliminar-usuario"></strong>?
+          <p class="small text-body-secondary mb-0 mt-2">Solo se puede eliminar a quien no tiene horas registradas. Si ya registró tiempo, <strong>desactívalo</strong> para conservar su historial y la facturación.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btn-confirmar-eliminar-usuario"><i class="bi bi-trash"></i> Sí, eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Modal: confirmar el restablecimiento ============ -->
+  <div class="modal fade" id="modal-restablecer" tabindex="-1" aria-labelledby="titulo-modal-restablecer" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-modal-restablecer"><i class="bi bi-exclamation-triangle text-danger"></i> Restablecer datos</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          Se borrarán <strong>todas las entradas de tiempo, proyectos y clientes</strong> y se cargarán los de ejemplo.
+          Los usuarios y los ajustes se conservan.
+          <p class="text-danger small mb-0 mt-2">Si quieres conservar tus datos, primero descarga el respaldo (.db).</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btn-confirmar-restablecer">Sí, restablecer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= Pie de página ======================= -->
+  <footer class="bg-white border-top py-3 mt-4">
+    <div class="container text-center text-body-secondary small">
+      &copy; <span id="anio-actual"></span> Control de Tiempo · Proyecto Final de Programación Web
+    </div>
+  </footer>
+
+  <!-- Los scripts van al final del <body>. El ORDEN importa: cada archivo usa lo definido en los anteriores. -->
+  <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <!-- SQLite compilado a JavaScript (sql.js) y la capa de datos del proyecto -->
+  <script src="vendor/sqljs/sql-asm.js"></script>
+  <script src="js/basedatos.js"></script>
+  <!-- Utilidades comunes a todas las páginas -->
+  <script src="js/app.js"></script>
+  <!-- Sesión y permisos: si no hay sesión envía a login.html y oculta lo que el rol no puede usar -->
+  <script src="js/sesion.js"></script>
+  <script src="js/usuarios.js"></script>
+</body>
+</html>

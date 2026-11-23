@@ -1,0 +1,325 @@
+/**
+ * estilos.css
+ * ----------------------------------------------------------------------------
+ * Estilos propios que complementan a Bootstrap.
+ * La mayor parte del diseño viene de las clases de Bootstrap; aquí solo se
+ * definen los colores de la marca y algunos detalles visuales.
+ */
+
+/* Variables de la marca: cambiar aquí cambia los colores de todo el sitio */
+:root {
+  /* Colores del manual de identidad (tomados del logotipo) */
+  --color-marca: #0000b6;          /* azul principal: la "V" del logotipo */
+  --color-marca-oscuro: #000080;   /* azul marino: la flecha del logotipo */
+  --color-fondo: #f4f5fa;          /* gris muy claro para el fondo */
+  --radio-tarjeta: 0.75rem;
+  --color-serie: #0000b6;          /* color de las barras de la gráfica */
+
+  /* Tipografía del manual de identidad (vendor/montserrat) */
+  --bs-body-font-family: 'Montserrat', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+
+  /* Se sobrescribe el color "primary" de Bootstrap con el de la marca */
+  --bs-primary: var(--color-marca);
+  --bs-primary-rgb: 0, 0, 182;
+  --bs-primary-text-emphasis: var(--color-marca-oscuro);
+  --bs-primary-bg-subtle: #e5e5f8;
+  --bs-primary-border-subtle: #b3b3e9;
+  /* Bootstrap 5.3 pinta los enlaces con estas variables RGB */
+  --bs-link-color-rgb: 0, 0, 182;
+  --bs-link-hover-color-rgb: 0, 0, 128;
+  --bs-focus-ring-color: rgba(0, 0, 182, 0.25);
+  --bs-link-color: var(--color-marca);
+  --bs-link-hover-color: var(--color-marca-oscuro);
+}
+
+/* El pie de página siempre queda abajo aunque haya poco contenido */
+body {
+  background-color: var(--color-fondo);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+}
+
+/* Botones primarios con el color de la marca */
+.btn-primary {
+  --bs-btn-bg: var(--color-marca);
+  --bs-btn-border-color: var(--color-marca);
+  --bs-btn-hover-bg: var(--color-marca-oscuro);
+  --bs-btn-hover-border-color: var(--color-marca-oscuro);
+  --bs-btn-active-bg: var(--color-marca-oscuro);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--color-marca);
+  --bs-btn-border-color: var(--color-marca);
+  --bs-btn-hover-bg: var(--color-marca);
+  --bs-btn-hover-border-color: var(--color-marca);
+}
+
+/* Campos con el foco: borde y brillo con el azul de la marca (Bootstrap trae otro azul) */
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: #6666d3;
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+
+.form-check-input:checked {
+  background-color: var(--color-marca);
+  border-color: var(--color-marca);
+}
+
+/* Barra de navegación en azul marino (el logotipo va en su versión blanca) */
+.bg-marca {
+  background-color: var(--color-marca-oscuro) !important;
+}
+
+/* Logotipo en la barra de navegación y en la pantalla de acceso.
+   Se respeta su proporción original (solo se fija la altura), como pide el manual. */
+.logo-marca {
+  height: 1.75rem;
+  width: auto;
+  margin-right: 0.35rem;
+  vertical-align: -0.35rem;
+}
+
+.logo-login {
+  height: 4.5rem;
+  width: auto;
+}
+
+/* Página actual del menú: línea blanca debajo del enlace */
+.navbar .nav-link.active {
+  box-shadow: inset 0 -3px 0 #fff;
+}
+
+/* Tarjetas con bordes suaves y sin borde gris */
+.card {
+  border: none;
+  border-radius: var(--radio-tarjeta);
+}
+
+/* Tarjetas de indicadores (KPI) del panel de inicio */
+.tarjeta-kpi .icono-kpi {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;   /* evita que el círculo se aplaste cuando el texto es largo (móvil) */
+}
+
+.tarjeta-kpi .valor-kpi {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+/* Efecto al pasar el mouse por una tarjeta clicable */
+.tarjeta-interactiva {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tarjeta-interactiva:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Encabezado de la tabla con el color de la marca */
+.tabla-datos thead th {
+  background-color: var(--color-marca);
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Fila resaltada brevemente (por ejemplo, al eliminar) */
+.fila-eliminando {
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+/* ---------------------- Proyectos: punto de color ---------------------- */
+/* El color de cada proyecto llega en la variable --color-proyecto (style="--color-proyecto:#2a78d6") */
+.punto-proyecto {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background-color: var(--color-proyecto, transparent);
+  margin-right: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* Sin proyecto: círculo vacío con borde punteado */
+.punto-vacio {
+  border: 1px dashed var(--bs-secondary-color);
+}
+
+/* Módulo junto al proyecto: "Proyecto › Módulo" */
+.etiqueta-modulo {
+  color: var(--color-marca);
+  font-weight: 500;
+}
+
+.etiqueta-modulo .bi {
+  font-size: 0.7em;
+  color: var(--bs-secondary-color);
+}
+
+/* Muestras de color del formulario de proyecto */
+.muestra-color {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background-color: var(--color-proyecto);
+  box-shadow: 0 0 0 1px var(--bs-border-color);
+}
+
+.muestra-color[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--bs-body-color);
+}
+
+/* ---------------------- Barra del cronómetro ---------------------- */
+.barra-cronometro .reloj {
+  font-size: 1.5rem;
+  font-weight: 600;
+  min-width: 6.5rem;
+  text-align: center;
+}
+
+/* Mientras corre: franja roja a la izquierda y reloj en rojo */
+.barra-corriendo {
+  box-shadow: inset 4px 0 0 var(--bs-danger), var(--bs-box-shadow-sm) !important;
+}
+
+.barra-corriendo .reloj {
+  color: var(--bs-danger);
+}
+
+/* Botón $ (facturable): verde cuando está activo */
+.btn-facturable.active {
+  color: #fff;
+  background-color: var(--bs-success);
+  border-color: var(--bs-success);
+}
+
+/* Duración de cada entrada alineada en columna */
+.entrada .duracion {
+  min-width: 5.5rem;
+}
+
+/* ---------------------- Gráfica de horas por día ---------------------- */
+.grafica {
+  display: flex;
+  height: 220px;
+  gap: 0.5rem;
+}
+
+/* Eje vertical: 3 marcas (máximo, mitad, 0) */
+.grafica-eje {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+  padding-bottom: 1.5rem;          /* espacio de las etiquetas del eje X */
+  text-align: right;
+  min-width: 2.5rem;
+}
+
+/* Área de barras con líneas de guía tenues (máximo, mitad y base) */
+.grafica-area {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;                        /* separación de 2px entre barras */
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  background-image: linear-gradient(var(--bs-border-color-translucent) 1px, transparent 1px);
+  background-size: 100% 50%;
+}
+
+/* Cada columna ocupa toda la altura: es el área para pasar el mouse (más grande que la barra) */
+.grafica-columna {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: default;
+  outline: none;
+}
+
+.grafica-barra {
+  width: 100%;
+  max-width: 2.5rem;
+  background-color: var(--color-serie);
+  border-radius: 4px 4px 0 0;      /* esquinas redondeadas solo arriba; la base queda recta */
+  transition: opacity 0.15s ease;
+}
+
+.grafica-columna:hover .grafica-barra,
+.grafica-columna:focus .grafica-barra {
+  opacity: 0.75;
+}
+
+.grafica-columna:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--bs-body-color);
+  border-radius: 4px;
+}
+
+.grafica-etiqueta {
+  position: absolute;
+  bottom: -1.4rem;
+  font-size: 0.7rem;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+}
+
+/* Recuadro con el detalle del día (lo posiciona reportes.js) */
+.tooltip-grafica {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background-color: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  box-shadow: var(--bs-box-shadow);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  pointer-events: none;            /* no interfiere con el mouse */
+  white-space: nowrap;
+  z-index: 5;
+}
+
+/* Contador de caracteres que cambia de color al acercarse al límite */
+.contador-limite {
+  color: var(--bs-danger) !important;
+  font-weight: 600;
+}
+
+/* Pantalla de inicio de sesión: fondo degradado con el color de la marca */
+.pagina-login {
+  background: linear-gradient(135deg, var(--color-marca) 0%, var(--color-marca-oscuro) 100%);
+}
+
+/* En pantallas pequeñas los títulos se reducen un poco */
+@media (max-width: 576px) {
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .tarjeta-kpi .valor-kpi {
+    font-size: 1.15rem;
+  }
+
+  /* En móvil la gráfica es más baja */
+  .grafica {
+    height: 170px;
+  }
+}

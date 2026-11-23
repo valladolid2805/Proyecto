@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!--
+  login.html - INICIO DE SESIÓN
+  Pantalla pública (no requiere sesión). Verifica usuario y contraseña contra la
+  tabla "usuarios" de SQLite y, si son correctos, abre la sesión y envía al inicio.
+  Todas las demás páginas redirigen aquí cuando no hay sesión iniciada.
+  Lógica en: js/login.js
+-->
+<html lang="es">
+<head>
+  <!-- Codificación UTF-8: permite mostrar acentos y la letra ñ -->
+  <meta charset="UTF-8">
+  <!-- Viewport: indispensable para el diseño responsivo -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Acceso al sistema de control de tiempo.">
+  <title>Iniciar sesión | Control de Tiempo</title>
+
+  <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Tipografía Montserrat (manual de identidad), copia local -->
+  <link href="vendor/montserrat/montserrat.css" rel="stylesheet">
+  <link href="css/estilos.css" rel="stylesheet">
+  <!-- Ícono de la pestaña: logotipo -->
+  <link rel="icon" type="image/png" href="img/logo.png">
+</head>
+<!-- pagina-login: fondo con el color de la marca (css/estilos.css) -->
+<body class="pagina-login">
+
+  <!-- d-flex + align-items-center + min-vh-100: centra la tarjeta vertical y horizontalmente -->
+  <main class="container d-flex align-items-center justify-content-center min-vh-100 py-4">
+    <div class="w-100" style="max-width: 420px">
+
+      <!-- Logotipo y nombre del sistema -->
+      <header class="text-center text-white mb-4">
+        <img src="img/logo-blanco.png" alt="Logotipo" class="logo-login">
+        <h1 class="h3 fw-bold mt-2 mb-0">Control de Tiempo</h1>
+        <p class="opacity-75 mb-0">Registra horas, proyectos y lo que se factura</p>
+      </header>
+
+      <!-- Tarjeta con el formulario de acceso -->
+      <section class="card shadow-lg" aria-labelledby="titulo-login">
+        <div class="card-body p-4">
+          <h2 class="h5 fw-bold mb-3" id="titulo-login">Iniciar sesión</h2>
+
+          <!-- Mensaje de error (oculto con d-none hasta que login.js lo muestra) -->
+          <div class="alert alert-danger d-none py-2" id="error-login" role="alert"></div>
+
+          <!-- novalidate: la validación la hace login.js con mensajes en español -->
+          <form id="form-login" novalidate>
+            <div class="mb-3">
+              <label for="usuario" class="form-label">Usuario</label>
+              <div class="input-group has-validation">
+                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                <!-- autocomplete="username": el navegador puede recordar el usuario -->
+                <input type="text" class="form-control" id="usuario" name="usuario" autocomplete="username"
+                       placeholder="Ej. admin" required autofocus>
+                <div class="invalid-feedback">Escribe tu usuario.</div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="password" class="form-label">Contraseña</label>
+              <div class="input-group has-validation">
+                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <!-- type="password": oculta los caracteres mientras se escriben -->
+                <input type="password" class="form-control" id="password" name="password"
+                       autocomplete="current-password" placeholder="Tu contraseña" required>
+                <!-- Botón para mostrar u ocultar la contraseña (login.js) -->
+                <button type="button" class="btn btn-outline-secondary" id="btn-ver-password"
+                        title="Mostrar contraseña" aria-label="Mostrar contraseña">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <div class="invalid-feedback">Escribe tu contraseña.</div>
+              </div>
+            </div>
+
+            <!-- d-grid: el botón ocupa todo el ancho -->
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-lg" id="btn-entrar">
+                <i class="bi bi-box-arrow-in-right"></i> Entrar
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Usuarios de demostración: un clic llena el formulario (útil para la presentación) -->
+        <div class="card-footer bg-body-tertiary p-3">
+          <p class="small text-body-secondary mb-2">
+            <i class="bi bi-info-circle"></i> Usuarios de prueba (clic para usarlos):
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-demo" data-usuario="admin" data-password="admin123">
+              <i class="bi bi-shield-lock"></i> admin
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-demo" data-usuario="daniel" data-password="daniel123">
+              <i class="bi bi-person-workspace"></i> daniel
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <footer class="text-center text-white-50 small mt-4">
+        &copy; <span id="anio-actual"></span> Control de Tiempo · Proyecto Final de Programación Web
+      </footer>
+    </div>
+  </main>
+
+  <!-- Los scripts van al final del <body>. El ORDEN importa: cada archivo usa lo definido en los anteriores. -->
+  <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <!-- SQLite compilado a JavaScript (sql.js) y la capa de datos del proyecto -->
+  <script src="vendor/sqljs/sql-asm.js"></script>
+  <script src="js/basedatos.js"></script>
+  <!-- Utilidades comunes: formatos, alertas y mensajes flash -->
+  <script src="js/app.js"></script>
+  <!-- Sesión y permisos (en esta página no redirige, porque login.html es pública) -->
+  <script src="js/sesion.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<!--
+  proyectos.html - PROYECTOS Y CLIENTES (como "Projects" y "Clients" de Clockify)
+  Pestaña Proyectos: color, cliente, tarifa por hora, facturable, presupuesto de horas,
+                     tiempo registrado, importe y avance del presupuesto.
+  Pestaña Clientes:  datos de contacto, número de proyectos, tiempo e importe.
+  Todos los roles pueden consultar; solo el administrador crea, edita, archiva y elimina.
+  Lógica en: js/proyectos.js
+-->
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Proyectos, clientes y tarifas por hora.">
+  <title>Proyectos | Control de Tiempo</title>
+
+  <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Tipografía Montserrat (manual de identidad), copia local -->
+  <link href="vendor/montserrat/montserrat.css" rel="stylesheet">
+  <link href="css/estilos.css" rel="stylesheet">
+  <!-- Ícono de la pestaña: logotipo -->
+  <link rel="icon" type="image/png" href="img/logo.png">
+</head>
+
+<body data-permiso="proyectos.ver">
+
+  <!-- ======================= Encabezado y menú (igual en todas las páginas) ======================= -->
+  <header>
+    <nav class="navbar navbar-expand-lg bg-marca shadow-sm" data-bs-theme="dark">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="index.html">
+          <img src="img/logo-blanco.png" alt="" class="logo-marca"> Control de Tiempo
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
+                aria-controls="menu-principal" aria-expanded="false" aria-label="Mostrar menú">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="menu-principal">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-clock-history"></i> Rastreador</a></li>
+            <li class="nav-item"><a class="nav-link" href="reportes.html"><i class="bi bi-bar-chart"></i> Reportes</a></li>
+            <li class="nav-item"><a class="nav-link" href="proyectos.html"><i class="bi bi-folder2-open"></i> Proyectos</a></li>
+            <li class="nav-item" data-permiso="usuarios.gestionar"><a class="nav-link" href="usuarios.html"><i class="bi bi-people"></i> Equipo</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ========================= Contenido ========================= -->
+  <main class="container py-4">
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-3">
+      <div>
+        <h1 class="h2 fw-bold mb-1">Proyectos y clientes</h1>
+        <p class="text-body-secondary mb-0" id="contador">Cargando...</p>
+      </div>
+      <div class="d-flex gap-2" data-permiso="proyectos.gestionar">
+        <button type="button" class="btn btn-outline-primary" id="btn-nuevo-cliente"><i class="bi bi-building-add"></i> Nuevo cliente</button>
+        <button type="button" class="btn btn-primary" id="btn-nuevo-proyecto"><i class="bi bi-plus-lg"></i> Nuevo proyecto</button>
+      </div>
+    </div>
+
+    <!-- Pestañas de Bootstrap: data-bs-toggle="tab" cambia el panel visible sin recargar -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-proyectos" data-bs-toggle="tab" data-bs-target="#panel-proyectos" type="button" role="tab"
+                aria-controls="panel-proyectos" aria-selected="true"><i class="bi bi-folder2-open"></i> Proyectos</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-clientes" data-bs-toggle="tab" data-bs-target="#panel-clientes" type="button" role="tab"
+                aria-controls="panel-clientes" aria-selected="false"><i class="bi bi-building"></i> Clientes</button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <!-- ======================= Pestaña: Proyectos ======================= -->
+      <section class="tab-pane fade show active" id="panel-proyectos" role="tabpanel" aria-labelledby="tab-proyectos">
+        <div class="card shadow-sm">
+          <div class="card-body border-bottom">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <label for="buscar" class="visually-hidden">Buscar</label>
+                  <input type="search" class="form-control" id="buscar" placeholder="Buscar proyecto o cliente...">
+                </div>
+              </div>
+              <div class="col-md-6 d-flex justify-content-md-end">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" role="switch" id="ver-archivados">
+                  <label class="form-check-label" for="ver-archivados">Mostrar archivados</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 tabla-datos">
+              <thead>
+                <tr>
+                  <th scope="col">Proyecto</th>
+                  <th scope="col" class="d-none d-md-table-cell">Tarifa</th>
+                  <th scope="col" class="text-end">Registrado</th>
+                  <th scope="col" class="text-end d-none d-sm-table-cell">Importe</th>
+                  <th scope="col" class="d-none d-lg-table-cell" style="min-width: 160px">Presupuesto</th>
+                  <th scope="col" class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <!-- Filas generadas por proyectos.js (dibujarProyectos) -->
+              <tbody id="tabla-proyectos">
+                <tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================= Pestaña: Clientes ======================= -->
+      <section class="tab-pane fade" id="panel-clientes" role="tabpanel" aria-labelledby="tab-clientes">
+        <div class="card shadow-sm">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 tabla-datos">
+              <thead>
+                <tr>
+                  <th scope="col">Cliente</th>
+                  <th scope="col" class="d-none d-md-table-cell">Contacto</th>
+                  <th scope="col" class="text-center">Proyectos</th>
+                  <th scope="col" class="text-end">Registrado</th>
+                  <th scope="col" class="text-end d-none d-sm-table-cell">Importe</th>
+                  <th scope="col" class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-clientes"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============ Modal: crear / editar proyecto ============ -->
+  <div class="modal fade" id="modal-proyecto" tabindex="-1" aria-labelledby="titulo-modal-proyecto" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="form-proyecto" novalidate>
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-modal-proyecto">Nuevo proyecto</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="p-nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="p-nombre" maxlength="80" placeholder="Ej. Sitio web corporativo" required>
+            <div class="invalid-feedback" id="error-p-nombre"></div>
+          </div>
+          <div class="mb-3">
+            <label for="p-cliente" class="form-label">Cliente</label>
+            <select class="form-select" id="p-cliente"><option value="">Sin cliente (interno)</option></select>
+            <div class="invalid-feedback" id="error-p-cliente"></div>
+          </div>
+          <!-- Color: muestras rápidas (las genera proyectos.js) + selector libre -->
+          <fieldset class="mb-3">
+            <legend class="form-label fs-6">Color <span class="text-danger">*</span></legend>
+            <div class="d-flex flex-wrap align-items-center gap-2" id="muestras-color"></div>
+            <input type="hidden" id="p-color">
+            <div class="invalid-feedback d-block" id="error-p-color"></div>
+          </fieldset>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label for="p-tarifa" class="form-label">Tarifa por hora</label>
+              <div class="input-group has-validation">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" id="p-tarifa" min="0" step="0.01" placeholder="La del miembro">
+                <div class="invalid-feedback" id="error-p-tarifa"></div>
+              </div>
+              <div class="form-text">Vacía = se usa la tarifa de cada miembro o la general.</div>
+            </div>
+            <div class="col-sm-6">
+              <label for="p-presupuesto" class="form-label">Presupuesto</label>
+              <div class="input-group has-validation">
+                <input type="number" class="form-control" id="p-presupuesto" min="0" step="0.5" placeholder="Sin límite">
+                <span class="input-group-text">horas</span>
+                <div class="invalid-feedback" id="error-p-presupuesto"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-check form-switch mt-3">
+            <input class="form-check-input" type="checkbox" role="switch" id="p-facturable" checked>
+            <label class="form-check-label" for="p-facturable">Facturable por defecto</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-guardar-proyecto"><i class="bi bi-floppy"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ Modal: módulos de un proyecto ============ -->
+  <div class="modal fade" id="modal-modulos" tabindex="-1" aria-labelledby="titulo-modal-modulos" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-modal-modulos"><i class="bi bi-diagram-3 text-primary"></i> Módulos</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Formulario para agregar / editar un módulo (solo administrador) -->
+          <form class="row g-2 align-items-start mb-3" id="form-modulo" novalidate data-permiso="proyectos.gestionar">
+            <div class="col-sm-6">
+              <label for="m-nombre" class="visually-hidden">Nombre del módulo</label>
+              <input type="text" class="form-control" id="m-nombre" maxlength="80" placeholder="Nombre del módulo (ej. Glosa)">
+              <div class="invalid-feedback" id="error-m-nombre"></div>
+            </div>
+            <div class="col-7 col-sm-3">
+              <label for="m-presupuesto" class="visually-hidden">Presupuesto en horas</label>
+              <div class="input-group has-validation">
+                <input type="number" class="form-control" id="m-presupuesto" min="0" step="0.5" placeholder="Presupuesto">
+                <span class="input-group-text">h</span>
+                <div class="invalid-feedback" id="error-m-presupuesto"></div>
+              </div>
+            </div>
+            <div class="col-5 col-sm-3 d-flex gap-1">
+              <button type="submit" class="btn btn-primary flex-grow-1" id="btn-guardar-modulo"><i class="bi bi-plus-lg"></i> Agregar</button>
+              <button type="button" class="btn btn-outline-secondary d-none" id="btn-cancelar-modulo" title="Cancelar edición" aria-label="Cancelar edición"><i class="bi bi-x-lg"></i></button>
+            </div>
+          </form>
+
+          <!-- Resumen: total del proyecto y horas sin módulo -->
+          <p class="small text-body-secondary mb-2" id="resumen-modulos"></p>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Módulo</th>
+                  <th scope="col" class="text-end">Tiempo</th>
+                  <th scope="col" class="text-end d-none d-sm-table-cell">Importe</th>
+                  <th scope="col" class="d-none d-md-table-cell" style="min-width: 150px">Presupuesto</th>
+                  <th scope="col" class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-modulos"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a class="btn btn-outline-primary" id="enlace-reporte-modulos" href="reportes.html"><i class="bi bi-bar-chart"></i> Ver reporte por módulo</a>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Modal: crear / editar cliente ============ -->
+  <div class="modal fade" id="modal-cliente" tabindex="-1" aria-labelledby="titulo-modal-cliente" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="form-cliente" novalidate>
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-modal-cliente">Nuevo cliente</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="c-nombre" class="form-label">Nombre o razón social <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="c-nombre" maxlength="80" placeholder="Ej. Clínica Santa Fe" required>
+            <div class="invalid-feedback" id="error-c-nombre"></div>
+          </div>
+          <div class="mb-3">
+            <label for="c-contacto" class="form-label">Persona de contacto</label>
+            <input type="text" class="form-control" id="c-contacto" maxlength="80">
+            <div class="invalid-feedback" id="error-c-contacto"></div>
+          </div>
+          <div>
+            <label for="c-correo" class="form-label">Correo</label>
+            <input type="email" class="form-control" id="c-correo" maxlength="120" placeholder="nombre@empresa.com">
+            <div class="invalid-feedback" id="error-c-correo"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-guardar-cliente"><i class="bi bi-floppy"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ Modal: confirmar eliminación (proyecto o cliente) ============ -->
+  <div class="modal fade" id="modal-confirmar" tabindex="-1" aria-labelledby="titulo-modal-confirmar" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-modal-confirmar"><i class="bi bi-trash text-danger"></i> Eliminar</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="texto-confirmar"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btn-confirmar"><i class="bi bi-trash"></i> Sí, eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-white border-top py-3 mt-4">
+    <div class="container text-center text-body-secondary small">
+      &copy; <span id="anio-actual"></span> Control de Tiempo · Proyecto Final de Programación Web
+    </div>
+  </footer>
+
+  <!-- Scripts al final del <body>. El ORDEN importa. -->
+  <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="vendor/sqljs/sql-asm.js"></script>
+  <script src="js/basedatos.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/proyectos.js"></script>
+</body>
+</html>

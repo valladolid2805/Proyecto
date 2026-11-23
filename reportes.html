@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<!--
+  reportes.html - REPORTES (como "Reports > Summary / Detailed" de Clockify)
+  Filtros por periodo, miembro, proyecto, cliente y facturable. Muestra:
+  tiempo total, tiempo facturable, importe, gráfica de horas por día,
+  desglose por proyecto y por miembro, y el detalle de cada entrada.
+  Permite exportar el detalle a CSV (se abre en Excel).
+  El colaborador solo ve sus propias horas; administrador y consulta ven a todo el equipo.
+  Lógica en: js/reportes.js
+-->
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Reportes de horas trabajadas, facturables e importes por proyecto y miembro.">
+  <title>Reportes | Control de Tiempo</title>
+
+  <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Tipografía Montserrat (manual de identidad), copia local -->
+  <link href="vendor/montserrat/montserrat.css" rel="stylesheet">
+  <link href="css/estilos.css" rel="stylesheet">
+  <!-- Ícono de la pestaña: logotipo -->
+  <link rel="icon" type="image/png" href="img/logo.png">
+</head>
+
+<body data-permiso="reportes.ver">
+
+  <!-- ======================= Encabezado y menú (igual en todas las páginas) ======================= -->
+  <header>
+    <nav class="navbar navbar-expand-lg bg-marca shadow-sm" data-bs-theme="dark">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="index.html">
+          <img src="img/logo-blanco.png" alt="" class="logo-marca"> Control de Tiempo
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
+                aria-controls="menu-principal" aria-expanded="false" aria-label="Mostrar menú">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="menu-principal">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-clock-history"></i> Rastreador</a></li>
+            <li class="nav-item"><a class="nav-link" href="reportes.html"><i class="bi bi-bar-chart"></i> Reportes</a></li>
+            <li class="nav-item"><a class="nav-link" href="proyectos.html"><i class="bi bi-folder2-open"></i> Proyectos</a></li>
+            <li class="nav-item" data-permiso="usuarios.gestionar"><a class="nav-link" href="usuarios.html"><i class="bi bi-people"></i> Equipo</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ========================= Contenido ========================= -->
+  <main class="container py-4">
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-3">
+      <div>
+        <h1 class="h2 fw-bold mb-1">Reportes</h1>
+        <p class="text-body-secondary mb-0" id="texto-periodo">Cargando...</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-primary" id="btn-csv"><i class="bi bi-filetype-csv"></i> Exportar CSV</button>
+        <!-- Abre el reporte en hoja membretada con firma, listo para "Guardar como PDF" -->
+        <button type="button" class="btn btn-primary" id="btn-pdf"><i class="bi bi-filetype-pdf"></i> Exportar PDF</button>
+      </div>
+    </div>
+
+    <!-- ============ Filtros (todos en una fila; en móvil se acomodan en varias) ============ -->
+    <section class="card shadow-sm mb-4" aria-label="Filtros del reporte">
+      <div class="card-body">
+        <form id="form-filtros" class="row g-2 align-items-end" novalidate>
+          <div class="col-12 col-md-4">
+            <label for="f-periodo" class="form-label small mb-1">Periodo</label>
+            <select class="form-select" id="f-periodo">
+              <option value="hoy">Hoy</option>
+              <option value="semana">Esta semana</option>
+              <option value="semana_pasada">Semana pasada</option>
+              <option value="mes">Este mes</option>
+              <option value="mes_pasado">Mes pasado</option>
+              <option value="ultimos30" selected>Últimos 30 días</option>
+              <option value="personalizado">Personalizado</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-4">
+            <label for="f-desde" class="form-label small mb-1">Desde</label>
+            <input type="date" class="form-control" id="f-desde">
+          </div>
+          <div class="col-6 col-md-4">
+            <label for="f-hasta" class="form-label small mb-1">Hasta</label>
+            <input type="date" class="form-control" id="f-hasta">
+          </div>
+          <!-- Filtro por miembro: solo para quien ve las horas de todo el equipo -->
+          <div class="col-6 col-md-4 col-lg" data-permiso="tiempo.ver_todos">
+            <label for="f-usuario" class="form-label small mb-1">Miembro</label>
+            <select class="form-select" id="f-usuario"><option value="">Todos</option></select>
+          </div>
+          <div class="col-6 col-md-4 col-lg">
+            <label for="f-cliente" class="form-label small mb-1">Cliente</label>
+            <select class="form-select" id="f-cliente"><option value="">Todos</option></select>
+          </div>
+          <div class="col-6 col-md-4 col-lg">
+            <label for="f-proyecto" class="form-label small mb-1">Proyecto</label>
+            <select class="form-select" id="f-proyecto">
+              <option value="">Todos</option>
+              <option value="ninguno">Sin proyecto</option>
+            </select>
+          </div>
+          <!-- Módulo: se llena según el proyecto elegido (reportes.js) -->
+          <div class="col-6 col-md-4 col-lg">
+            <label for="f-modulo" class="form-label small mb-1">Módulo</label>
+            <select class="form-select" id="f-modulo">
+              <option value="">Todos</option>
+              <option value="ninguno">Sin módulo</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-4 col-lg">
+            <label for="f-facturable" class="form-label small mb-1">Facturable</label>
+            <select class="form-select" id="f-facturable">
+              <option value="">Todos</option>
+              <option value="1">Facturable</option>
+              <option value="0">No facturable</option>
+            </select>
+          </div>
+          <div class="col-12 small text-danger d-none" id="error-filtros"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ Totales ============ -->
+    <section aria-label="Totales del periodo" class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <article class="card shadow-sm h-100 tarjeta-kpi">
+          <div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-kpi bg-primary-subtle text-primary"><i class="bi bi-clock"></i></span>
+            <div>
+              <p class="text-body-secondary small mb-0">Tiempo total</p>
+              <p class="valor-kpi mb-0 font-monospace" id="kpi-total">—</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="col-6 col-lg-3">
+        <article class="card shadow-sm h-100 tarjeta-kpi">
+          <div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-kpi bg-success-subtle text-success"><i class="bi bi-currency-dollar"></i></span>
+            <div>
+              <p class="text-body-secondary small mb-0">Facturable <span id="kpi-porcentaje"></span></p>
+              <p class="valor-kpi mb-0 font-monospace" id="kpi-facturable">—</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="col-6 col-lg-3">
+        <article class="card shadow-sm h-100 tarjeta-kpi">
+          <div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-kpi bg-warning-subtle text-warning-emphasis"><i class="bi bi-cash-coin"></i></span>
+            <div>
+              <p class="text-body-secondary small mb-0">Importe</p>
+              <p class="valor-kpi mb-0" id="kpi-importe">—</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="col-6 col-lg-3">
+        <article class="card shadow-sm h-100 tarjeta-kpi">
+          <div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-kpi bg-info-subtle text-info-emphasis"><i class="bi bi-list-ol"></i></span>
+            <div>
+              <p class="text-body-secondary small mb-0">Entradas</p>
+              <p class="valor-kpi mb-0" id="kpi-entradas">—</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ Gráfica: horas por día ============ -->
+    <section class="card shadow-sm mb-4" aria-labelledby="titulo-grafica">
+      <div class="card-header bg-white py-3">
+        <h2 class="h5 mb-0" id="titulo-grafica"><i class="bi bi-bar-chart text-primary"></i> Horas por día</h2>
+      </div>
+      <div class="card-body position-relative">
+        <!-- reportes.js dibuja las barras (dibujarGrafica). Al pasar el mouse se ve el detalle del día. -->
+        <div class="grafica" id="grafica" role="img" aria-label="Gráfica de horas por día"></div>
+        <div class="tooltip-grafica d-none" id="tooltip-grafica" role="status"></div>
+      </div>
+    </section>
+
+    <div class="row g-4 mb-4">
+      <!-- Desglose por proyecto -->
+      <section class="col-lg-7">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white py-3">
+            <h2 class="h5 mb-0"><i class="bi bi-folder2-open text-primary"></i> Por proyecto</h2>
+          </div>
+          <ul class="list-group list-group-flush" id="lista-proyectos"></ul>
+        </div>
+      </section>
+
+      <!-- Desglose por miembro (solo quien ve a todo el equipo) -->
+      <section class="col-lg-5" data-permiso="tiempo.ver_todos">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white py-3">
+            <h2 class="h5 mb-0"><i class="bi bi-people text-primary"></i> Por miembro</h2>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col" class="ps-3">Miembro</th>
+                  <th scope="col" class="text-end">Tiempo</th>
+                  <th scope="col" class="text-end pe-3">Importe</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-miembros"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ Desglose por módulo de cada proyecto ============ -->
+    <section class="card shadow-sm mb-4" aria-labelledby="titulo-modulos">
+      <div class="card-header bg-white py-3">
+        <h2 class="h5 mb-0" id="titulo-modulos"><i class="bi bi-diagram-3 text-primary"></i> Por módulo</h2>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col" class="ps-3">Proyecto › módulo</th>
+              <th scope="col" class="text-end d-none d-sm-table-cell">Entradas</th>
+              <th scope="col" class="text-end">Tiempo</th>
+              <th scope="col" class="d-none d-md-table-cell" style="min-width: 160px">% del proyecto</th>
+              <th scope="col" class="text-end pe-3">Importe</th>
+            </tr>
+          </thead>
+          <!-- Filas generadas por reportes.js (dibujarModulos) -->
+          <tbody id="tabla-modulos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ Detalle de entradas ============ -->
+    <section class="card shadow-sm" aria-labelledby="titulo-detalle">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0" id="titulo-detalle"><i class="bi bi-table text-primary"></i> Detalle</h2>
+        <span class="small text-body-secondary" id="nota-detalle"></span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 tabla-datos">
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Descripción / proyecto</th>
+              <th scope="col" class="d-none d-md-table-cell" data-permiso="tiempo.ver_todos">Miembro</th>
+              <th scope="col" class="d-none d-sm-table-cell">Horario</th>
+              <th scope="col" class="text-end">Duración</th>
+              <th scope="col" class="text-end">Importe</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-detalle">
+            <tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-white border-top py-3 mt-4">
+    <div class="container text-center text-body-secondary small">
+      &copy; <span id="anio-actual"></span> Control de Tiempo · Proyecto Final de Programación Web
+    </div>
+  </footer>
+
+  <!-- Scripts al final del <body>. El ORDEN importa. -->
+  <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="vendor/sqljs/sql-asm.js"></script>
+  <script src="js/basedatos.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/reportes.js"></script>
+</body>
+</html>

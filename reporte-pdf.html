@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<!--
+  reporte-pdf.html - REPORTE DE ACTIVIDADES EN HOJA MEMBRETADA (para guardar como PDF)
+  Se abre desde Reportes con el botón "Exportar PDF" y recibe los filtros en la URL
+  (desde, hasta, proyecto, modulo, cliente, usuario, facturable).
+
+  ¿Cómo se genera el PDF? Sin librerías: el navegador imprime la página y en
+  "Destino" se elige "Guardar como PDF".
+    - img/membrete.png  -> fondo de CADA hoja (logo arriba y franja abajo).
+    - img/firma.png     -> firma al final del reporte, con el nombre debajo.
+  Lógica en: js/reporte-pdf.js
+-->
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte de actividades | Control de Tiempo</title>
+  <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="vendor/montserrat/montserrat.css" rel="stylesheet">
+  <link href="css/estilos.css" rel="stylesheet">
+  <link href="css/reporte-pdf.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="img/logo.png">
+</head>
+
+<body data-permiso="reportes.ver" class="pagina-reporte">
+
+  <!-- Barra de acciones: solo se ve en pantalla, NO se imprime (clase no-imprimir) -->
+  <header class="barra-reporte no-imprimir">
+    <a href="reportes.html" class="btn btn-outline-light btn-sm" id="btn-regresar"><i class="bi bi-arrow-left"></i> Regresar</a>
+    <span class="small">Vista previa · en "Destino" elige <strong>Guardar como PDF</strong></span>
+    <button type="button" class="btn btn-light btn-sm fw-semibold" id="btn-imprimir"><i class="bi bi-filetype-pdf"></i> Guardar PDF</button>
+  </header>
+
+  <!-- Hoja membretada: al imprimir se repite en cada página (position: fixed) -->
+  <div class="membrete" aria-hidden="true"></div>
+
+  <!--
+    Tabla "marco": su encabezado y pie vacíos se repiten en cada hoja impresa y
+    reservan el espacio del logo (arriba) y de la franja (abajo), para que el
+    texto nunca quede encima del membrete.
+  -->
+  <table class="marco">
+    <thead><tr><td><div class="espacio-superior"></div></td></tr></thead>
+    <tfoot><tr><td><div class="espacio-inferior"></div></td></tr></tfoot>
+    <tbody>
+      <tr>
+        <td>
+          <main id="contenido-reporte">
+            <p class="text-center py-5" id="cargando">Generando reporte...</p>
+          </main>
+
+          <!--
+            Firma: SIEMPRE al final del reporte. reporte-pdf.js la coloca en el mismo
+            renglón que el total, así nunca queda sola en una hoja.
+          -->
+          <template id="plantilla-firma">
+            <section class="bloque-firma" aria-label="Firma">
+              <img src="img/firma.png" alt="Firma" class="firma" onerror="this.style.display='none'">
+              <div class="linea-firma"></div>
+              <p class="nombre-firma">Daniel Valladolid Zárate</p>
+              <p class="fecha-firma"></p>
+            </section>
+          </template>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="vendor/sqljs/sql-asm.js"></script>
+  <script src="js/basedatos.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/reporte-pdf.js"></script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<!--
+  index.html - RASTREADOR DE TIEMPO (página principal, como el "Time Tracker" de Clockify)
+  - Barra superior: "¿En qué estás trabajando?" + proyecto + facturable ($) + cronómetro + INICIAR/DETENER.
+  - Modo manual: registrar una entrada indicando fecha, hora de inicio y hora de fin.
+  - Totales del día y de la semana (tiempo, facturable e importe).
+  - Entradas agrupadas por día con su total; cada una se puede continuar (▶), editar o eliminar.
+  Lógica en: js/rastreador.js
+-->
+<html lang="es">
+<head>
+  <!-- Codificación UTF-8: permite mostrar acentos y la letra ñ -->
+  <meta charset="UTF-8">
+  <!-- Viewport: indispensable para el diseño responsivo; ajusta el ancho al de la pantalla -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Rastreador de tiempo: inicia el cronómetro y registra en qué trabaja tu equipo.">
+  <title>Rastreador | Control de Tiempo</title>
+
+  <!-- Bootstrap 5 e íconos de Bootstrap: copias locales en /vendor (funciona sin internet) -->
+  <link href="vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <link href="vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Estilos propios -->
+  <!-- Tipografía Montserrat (manual de identidad), copia local -->
+  <link href="vendor/montserrat/montserrat.css" rel="stylesheet">
+  <link href="css/estilos.css" rel="stylesheet">
+  <!-- Ícono de la pestaña: logotipo -->
+  <link rel="icon" type="image/png" href="img/logo.png">
+</head>
+
+<!-- data-permiso en <body>: permiso necesario para entrar a esta página (lo revisa js/sesion.js) -->
+<body data-permiso="reportes.ver">
+
+  <!-- ======================= Encabezado y menú ======================= -->
+  <header>
+    <!-- Barra de navegación de Bootstrap:
+           navbar-expand-lg      -> menú completo en pantalla grande; en móvil se colapsa en el botón ☰
+           bg-marca              -> color corporativo (definido en css/estilos.css)
+           data-bs-theme="dark"  -> texto claro sobre fondo oscuro -->
+    <nav class="navbar navbar-expand-lg bg-marca shadow-sm" data-bs-theme="dark">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="index.html">
+          <img src="img/logo-blanco.png" alt="" class="logo-marca"> Control de Tiempo
+        </a>
+        <!-- Botón "hamburguesa" (solo en móvil): data-bs-toggle/data-bs-target indican qué menú abrir -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
+                aria-controls="menu-principal" aria-expanded="false" aria-label="Mostrar menú">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="menu-principal">
+          <!-- ms-auto empuja los enlaces a la derecha. data-permiso: el enlace solo aparece si el rol tiene ese permiso.
+               El indicador del cronómetro y el menú del usuario los agrega js/sesion.js al final de esta lista. -->
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-clock-history"></i> Rastreador</a></li>
+            <li class="nav-item"><a class="nav-link" href="reportes.html"><i class="bi bi-bar-chart"></i> Reportes</a></li>
+            <li class="nav-item"><a class="nav-link" href="proyectos.html"><i class="bi bi-folder2-open"></i> Proyectos</a></li>
+            <li class="nav-item" data-permiso="usuarios.gestionar"><a class="nav-link" href="usuarios.html"><i class="bi bi-people"></i> Equipo</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ========================= Contenido ========================= -->
+  <main class="container py-4">
+
+    <section class="mb-3">
+      <h1 class="h2 fw-bold mb-1">Rastreador de tiempo</h1>
+      <!-- El saludo lo escribe rastreador.js -->
+      <p class="text-body-secondary mb-0" id="saludo">Registra en qué trabajas y cuánto tiempo te toma.</p>
+    </section>
+
+    <!-- ============ Barra del cronómetro (solo quien registra tiempo) ============ -->
+    <section class="card shadow-sm mb-4 barra-cronometro" id="barra-cronometro" aria-label="Cronómetro" data-permiso="tiempo.registrar">
+      <div class="card-body">
+        <!-- novalidate: la validación la hace rastreador.js con mensajes en español -->
+        <form id="form-cronometro" class="row g-2 align-items-center" novalidate>
+
+          <!-- ¿En qué estás trabajando? -->
+          <div class="col-12 col-xl">
+            <label for="descripcion" class="visually-hidden">Descripción</label>
+            <input type="text" class="form-control form-control-lg" id="descripcion" maxlength="200"
+                   placeholder="¿En qué estás trabajando?" autocomplete="off">
+            <div class="invalid-feedback" id="error-descripcion"></div>
+          </div>
+
+          <!-- Proyecto: el punto de color lo actualiza rastreador.js -->
+          <div class="col-12 col-md-6 col-xl-3">
+            <label for="proyecto" class="visually-hidden">Proyecto</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white"><span class="punto-proyecto m-0" id="punto-proyecto"></span></span>
+              <select class="form-select" id="proyecto">
+                <option value="">Sin proyecto</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Módulo del proyecto (se llena según el proyecto elegido; deshabilitado si no tiene módulos) -->
+          <div class="col-12 col-md-6 col-xl-2">
+            <label for="modulo" class="visually-hidden">Módulo</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white" title="Módulo"><i class="bi bi-diagram-3"></i></span>
+              <select class="form-select" id="modulo" disabled>
+                <option value="">Sin módulos</option>
+              </select>
+            </div>
+            <div class="small text-danger d-none" id="error-modulo"></div>
+          </div>
+
+          <!-- Campos del modo manual (ocultos en modo cronómetro) -->
+          <div class="col-12 col-md-7 col-xl-auto d-none" id="campos-manual">
+            <div class="input-group">
+              <label class="visually-hidden" for="hora-inicio">Hora de inicio</label>
+              <input type="time" class="form-control" id="hora-inicio" title="Hora de inicio">
+              <span class="input-group-text">–</span>
+              <label class="visually-hidden" for="hora-fin">Hora de fin</label>
+              <input type="time" class="form-control" id="hora-fin" title="Hora de fin">
+              <label class="visually-hidden" for="fecha">Fecha</label>
+              <input type="date" class="form-control" id="fecha" title="Fecha">
+            </div>
+            <div class="small text-danger mt-1 d-none" id="error-manual"></div>
+          </div>
+
+          <!-- Facturable ($), reloj y botones -->
+          <div class="col-12 col-md-auto ms-md-auto d-flex align-items-center gap-2">
+            <!-- aria-pressed indica a los lectores de pantalla si está activo -->
+            <button type="button" class="btn btn-outline-secondary btn-facturable" id="btn-facturable"
+                    aria-pressed="true" title="Facturable" aria-label="Facturable">
+              <i class="bi bi-currency-dollar"></i>
+            </button>
+            <span class="reloj font-monospace" id="reloj" aria-live="off">0:00:00</span>
+            <button type="submit" class="btn btn-primary btn-lg px-4 fw-semibold" id="btn-principal">INICIAR</button>
+            <!-- Descartar el cronómetro en curso (solo visible mientras corre) -->
+            <button type="button" class="btn btn-link text-body-secondary px-1 d-none" id="btn-descartar"
+                    title="Descartar sin guardar" aria-label="Descartar sin guardar">
+              <i class="bi bi-x-lg"></i>
+            </button>
+            <!-- Cambiar entre modo cronómetro y modo manual -->
+            <div class="btn-group-vertical btn-group-sm" role="group" aria-label="Modo de registro">
+              <button type="button" class="btn btn-light py-0" id="modo-cronometro" title="Modo cronómetro" aria-label="Modo cronómetro">
+                <i class="bi bi-stopwatch"></i>
+              </button>
+              <button type="button" class="btn btn-light py-0" id="modo-manual" title="Modo manual" aria-label="Modo manual">
+                <i class="bi bi-list-ul"></i>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ Totales del usuario (hoy y esta semana) ============ -->
+    <!-- Grid de Bootstrap: col-6 = 2 tarjetas por fila en móvil | col-lg-3 = 4 por fila en escritorio -->
+    <section aria-label="Mis totales" class="row g-3 mb-4" data-permiso="tiempo.registrar">
+      <div class="col-6 col-lg-3">
+        <article class="card shadow-sm h-100 tarjeta-kpi">
+          <div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-kpi bg-primary-subtle text-primary"><i class="bi bi-sun"></i></span>
+            <div>
+              <p class="text-body-secondary small mb-0">Hoy</p>
+              <p class="valor-kpi mb-0 font-monospace" id="kpi-hoy">—</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="col-6 col-lg-3">
+        <article class="card shadow-sm h-100 tarjeta-kpi">
+          <div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-kpi bg-info-subtle text-info-emphasis"><i class="bi bi-calendar-week"></i></span>
+            <div>
+              <p class="text-body-secondary small mb-0">Esta semana</p>
+              <p class="valor-kpi mb-0 font-monospace" id="kpi-semana">—</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="col-6 col-lg-3">
+        <article class="card shadow-sm h-100 tarjeta-kpi">
+          <div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-kpi bg-success-subtle text-success"><i class="bi bi-currency-dollar"></i></span>
+            <div>
+              <p class="text-body-secondary small mb-0">Facturable (semana)</p>
+              <p class="valor-kpi mb-0 font-monospace" id="kpi-facturable">—</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="col-6 col-lg-3">
+        <article class="card shadow-sm h-100 tarjeta-kpi">
+          <div class="card-body d-flex align-items-center gap-3">
+            <span class="icono-kpi bg-warning-subtle text-warning-emphasis"><i class="bi bi-cash-coin"></i></span>
+            <div>
+              <p class="text-body-secondary small mb-0">Importe (semana)</p>
+              <p class="valor-kpi mb-0" id="kpi-importe">—</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ Entradas agrupadas por día ============ -->
+    <section aria-labelledby="titulo-entradas">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0" id="titulo-entradas">Mis entradas</h2>
+        <a href="reportes.html" class="small"><i class="bi bi-bar-chart"></i> Ver reportes</a>
+      </div>
+      <!-- rastreador.js genera una tarjeta por día (dibujarEntradas). Mientras carga se ve el spinner -->
+      <div id="lista-dias">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+        </div>
+      </div>
+      <div class="text-center mt-3">
+        <button type="button" class="btn btn-outline-primary d-none" id="btn-mas"><i class="bi bi-chevron-down"></i> Cargar más</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ Modal: editar una entrada ============ -->
+  <div class="modal fade" id="modal-entrada" tabindex="-1" aria-labelledby="titulo-modal-entrada" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="form-entrada" novalidate>
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-modal-entrada"><i class="bi bi-pencil-square text-primary"></i> Editar entrada</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="e-descripcion" class="form-label">Descripción</label>
+            <input type="text" class="form-control" id="e-descripcion" maxlength="200" placeholder="¿En qué trabajaste?">
+            <div class="invalid-feedback" id="error-e-descripcion"></div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-sm-8">
+              <label for="e-proyecto" class="form-label">Proyecto</label>
+              <select class="form-select" id="e-proyecto">
+                <option value="">Sin proyecto</option>
+              </select>
+              <div class="invalid-feedback" id="error-e-proyecto"></div>
+            </div>
+            <div class="col-sm-4 d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="e-facturable">
+                <label class="form-check-label" for="e-facturable">Facturable</label>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="e-modulo" class="form-label">Módulo</label>
+            <select class="form-select" id="e-modulo" disabled>
+              <option value="">Sin módulos</option>
+            </select>
+            <div class="invalid-feedback" id="error-e-modulo"></div>
+          </div>
+          <div class="row g-3">
+            <div class="col-sm-4">
+              <label for="e-fecha" class="form-label">Fecha <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="e-fecha" required>
+              <div class="invalid-feedback" id="error-e-fecha"></div>
+            </div>
+            <div class="col-6 col-sm-4">
+              <label for="e-inicio" class="form-label">Inicio <span class="text-danger">*</span></label>
+              <input type="time" class="form-control" id="e-inicio" required>
+              <div class="invalid-feedback" id="error-e-inicio"></div>
+            </div>
+            <div class="col-6 col-sm-4">
+              <label for="e-fin" class="form-label">Fin <span class="text-danger">*</span></label>
+              <input type="time" class="form-control" id="e-fin" required>
+              <div class="invalid-feedback" id="error-e-fin"></div>
+            </div>
+          </div>
+          <!-- Duración calculada al vuelo (rastreador.js) -->
+          <p class="small text-body-secondary mt-2 mb-0">Duración: <strong class="font-monospace" id="e-duracion">—</strong></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-guardar-entrada"><i class="bi bi-floppy"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ Modal: confirmar eliminación de una entrada ============ -->
+  <div class="modal fade" id="modal-eliminar" tabindex="-1" aria-labelledby="titulo-modal-eliminar" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-modal-eliminar"><i class="bi bi-trash text-danger"></i> Eliminar entrada</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          ¿Seguro que deseas eliminar la entrada <strong id="texto-eliminar"></strong>? Esta acción no se puede deshacer.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btn-confirmar-eliminar"><i class="bi bi-trash"></i> Sí, eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= Pie de página (el año lo escribe app.js) ======================= -->
+  <footer class="bg-white border-top py-3 mt-4">
+    <div class="container text-center text-body-secondary small">
+      &copy; <span id="anio-actual"></span> Control de Tiempo · Proyecto Final de Programación Web
+    </div>
+  </footer>
+
+  <!-- Los scripts van al final del <body> para que el HTML ya exista cuando se ejecuten.
+       El ORDEN importa: cada archivo usa funciones definidas en los anteriores. -->
+  <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script> <!-- 1) Bootstrap: menú, modales, notificaciones -->
+  <script src="vendor/sqljs/sql-asm.js"></script>                  <!-- 2) Motor SQLite (sql.js) -->
+  <script src="js/basedatos.js"></script>                           <!-- 3) Capa de datos (objeto BD) -->
+  <script src="js/app.js"></script>                                 <!-- 4) Utilidades comunes -->
+  <script src="js/sesion.js"></script>                              <!-- 5) Sesión y permisos -->
+  <script src="js/rastreador.js"></script>                          <!-- 6) Lógica de esta página -->
+</body>
+</html>
